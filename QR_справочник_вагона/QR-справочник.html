@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>QR-справочник по оборудованию вагона</title>
+<style>
+:root{color-scheme:light dark;--bg:light-dark(#f2f6f8,#101820);--surface:light-dark(#fff,#19232c);--surface2:light-dark(#e8f0f4,#24313b);--text:light-dark(#183042,#f3f6f8);--muted:light-dark(#687985,#aebbc4);--accent:light-dark(#2b718f,#69b4cf);--accent2:light-dark(#d9e8ef,#d2dce2);--border:light-dark(#c9d9e2,#35444f)}
+*{box-sizing:border-box} body{margin:0;font-family:Inter,Arial,sans-serif;background:var(--bg);color:var(--text)}
+#app{min-height:100vh;background:var(--bg)} header{padding:42px 22px 30px;border-bottom:4px solid var(--accent);background:linear-gradient(135deg,var(--surface),var(--surface2))}.wrap{max-width:1080px;margin:auto}
+.badge{display:inline-block;padding:7px 11px;border-radius:6px;background:var(--accent);color:#fff;font-size:12px;text-transform:uppercase;letter-spacing:.08em;font-weight:800} h1{font-size:clamp(30px,5vw,52px);margin:16px 0 10px;letter-spacing:-1.5px;line-height:1.05} .lead{max-width:760px;color:var(--muted);font-size:17px;line-height:1.6;margin:0}
+.student{margin-top:20px;font-weight:800}.student span{color:var(--muted);font-weight:500}
+main{padding:30px 22px 54px}.tools{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:24px} input{flex:1;min-width:220px;padding:14px 16px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);font-size:15px}.count{padding:13px 0;color:var(--muted)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(255px,1fr));gap:22px}.card{background:var(--surface);border:1px solid var(--border);border-radius:20px;overflow:hidden;box-shadow:0 8px 24px #18304218;display:flex;flex-direction:column;min-height:390px;transition:transform .2s,box-shadow .2s,border-color .2s}.card:hover{transform:translateY(-3px);box-shadow:0 14px 30px #18304220;border-color:var(--accent)}.photo-wrap{position:relative;height:190px;background:var(--surface2);overflow:hidden}.photo{width:100%;height:100%;object-fit:cover;display:block}.card-body{padding:20px;display:flex;flex-direction:column;flex:1}.card h2{font-size:20px;margin:0 0 9px}.card p{color:var(--muted);line-height:1.5;margin:0 0 18px}.btn{margin-top:auto;border:0;border-radius:12px;padding:12px 15px;background:var(--accent);color:white;font-weight:800;cursor:pointer}.btn.secondary{background:var(--surface2);color:var(--text)}
+.modal{position:fixed;inset:0;background:#10243299;display:none;align-items:center;justify-content:center;padding:18px;z-index:100}
+.modal.open{display:flex}
+.dialog{width:min(1250px,100%);max-height:92vh;overflow:auto;background:var(--surface);border:1px solid var(--border);border-radius:28px;padding:0;box-shadow:0 24px 70px #10243240}
+.dialog-photo{width:100%;height:220px;object-fit:cover;object-position:center;display:block;background:var(--surface2)}
+.dialog-content{padding:28px}
+.dialog-top{display:flex;justify-content:space-between;gap:15px;align-items:flex-start}
+.close{border:0;background:var(--surface2);color:var(--text);width:42px;height:42px;border-radius:50%;cursor:pointer;font-size:20px;flex:0 0 auto}
+.close:hover{background:var(--accent);color:#fff}
+.dialog h2{margin:0 0 8px;font-size:32px}
+.dialog p,.dialog li{color:var(--muted);line-height:1.6}
+.dialog-main{display:grid;grid-template-columns:minmax(0,1fr) 290px;gap:28px;margin-top:24px}
+.parts-panel{background:var(--surface2);border:1px solid var(--border);border-radius:18px;padding:20px;height:max-content;position:sticky;top:0}
+.parts-panel h3{margin-top:0}
+.parts-panel ul{margin:0;padding-left:22px}
+.purpose{margin-top:24px}
+.qr{margin:20px auto 8px;width:190px;height:190px;border:10px solid white;border-radius:16px;overflow:hidden;background:white;display:block}
+.qr img{width:100%;height:100%;display:block}
+.qr small{display:none}
+@media(max-width:760px){.dialog-main{grid-template-columns:1fr}.parts-panel{position:static}.dialog-photo{height:180px}.dialog-content{padding:20px}.dialog h2{font-size:26px}}
+@media(max-width:560px){header{padding-top:25px}.card{min-height:200px}.dialog-photo{height:150px}}
+</style></head>
+<body><div id="app">
+<header><div class="wrap"><div class="badge">Итоговый проект · 926 ТПС</div><h1>QR-справочник по оборудованию вагона</h1><p class="lead">Простой электронный справочник: выберите узел вагона, чтобы узнать его назначение, основные элементы и принцип работы. Для каждого узла предусмотрен QR-код.</p><div class="student">Гетьманов Артем <span>· 926 ТПС</span></div></div></header>
+<main><div class="wrap"><div class="tools"><input id="search" placeholder="Поиск по названию узла…"><div class="count" id="count"></div></div><div class="grid" id="grid"></div></div></main>
+<footer>Учебный справочник. Информация предназначена для ознакомления и подготовки к защите проекта.</footer>
+</div>
+<div class="modal" id="modal"><div class="dialog">
+<img id="dialogPhoto" class="dialog-photo" alt="Фото узла">
+<div class="dialog-content">
+<div class="dialog-top"><div><h2 id="title"></h2><div id="subtitle" class="badge"></div></div><button class="close" id="close">×</button></div>
+<div class="dialog-main">
+<div><p id="desc"></p><div class="purpose"><h3>Назначение</h3><p id="purpose"></p></div><div class="qr"><img id="qrImage" alt="QR-код"></div><p style="text-align:center;font-size:13px">QR-код открывает эту карточку узла на любом устройстве.</p></div>
+<aside class="parts-panel"><h3>Основные части</h3><ul id="parts"></ul></aside>
+</div></div></div></div>
+<script>
+const data=[
+{photo:'photo/kolesa.png',slug:'kolesnaya-para',name:'Колёсная пара',short:'Передаёт нагрузку вагона на рельсы и обеспечивает движение.',desc:'Колёсная пара объединяет два колеса и ось. Это один из основных ходовых узлов вагона.',parts:['колёса','ось','буксовые узлы'],purpose:'Обеспечивает опирание вагона на рельсовый путь и передачу тяговых и тормозных усилий.'},
+{photo:'photo/',slug:'buksovyy-uzel',name:'Буксовый узел',short:'Связывает колёсную пару с рамой тележки и размещает подшипники.',desc:'Буксовый узел обеспечивает вращение оси и передачу нагрузок от кузова к колёсной паре.',parts:['корпус буксы','подшипники','уплотнения'],purpose:'Снижает сопротивление вращению и обеспечивает надёжное соединение ходовой части.'},
+{photo:'photo/',slug:'telezhka-vagona',name:'Тележка вагона',short:'Ходовая часть, воспринимающая массу кузова и направляющая вагон.',desc:'Тележка объединяет несколько элементов ходовой части и позволяет кузову проходить кривые участки пути.',parts:['рама тележки','колёсные пары','рессорное подвешивание'],purpose:'Обеспечивает устойчивое движение, распределение нагрузки и плавность хода.'},
+{photo:'photo/ressor.png',slug:'ressornoe-podveshivanie',name:'Рессорное подвешивание',short:'Смягчает удары и вибрации между тележкой и кузовом.',desc:'Система упругих элементов воспринимает динамические нагрузки, возникающие при движении вагона.',parts:['пружины или рессоры','опорные детали','гасители колебаний'],purpose:'Повышает плавность хода и снижает передачу вибраций на кузов.'},
+{photo:'photo/tormoz.png',slug:'tormoznoe-oborudovanie',name:'Тормозное оборудование',short:'Создаёт тормозное усилие и обеспечивает снижение скорости вагона.',desc:'Тормозная система включает пневматические и механические элементы, передающие усилие к тормозным устройствам.',parts:['тормозная магистраль','тормозной цилиндр','рычажная передача','колодки'],purpose:'Обеспечивает служебное и экстренное торможение в составе поезда.'},
+{photo:'photo/avtocep.png',slug:'avtostsepnoe-ustroystvo',name:'Автосцепное устройство',short:'Соединяет вагоны между собой и передаёт продольные силы.',desc:'Автосцепное устройство позволяет быстро сцеплять вагоны и воспринимать растягивающие и сжимающие нагрузки.',parts:['корпус автосцепки','замковый механизм','поглощающий аппарат'],purpose:'Обеспечивает надёжное механическое соединение вагонов в составе.'},
+{photo:'photo/',slug:'pnevmaticheskaya-sistema',name:'Пневматическая система',short:'Передаёт сжатый воздух для работы тормозного оборудования.',desc:'Пневматическое оборудование использует сжатый воздух для управления тормозами и другими исполнительными устройствами.',parts:['магистраль','краны','резервуары','соединительные рукава'],purpose:'Передаёт и распределяет сжатый воздух между вагонами и тормозными приборами.'},
+{photo:'photo/vagon.png',slug:'kuzov-vagona',name:'Кузов вагона',short:'Основная несущая часть, предназначенная для размещения груза или пассажиров.',desc:'Кузов воспринимает нагрузки и формирует внутреннее пространство вагона.',parts:['рама кузова','стены','крыша','двери'],purpose:'Защищает размещённый груз или пассажиров и воспринимает эксплуатационные нагрузки.'}
+];
+const grid=document.querySelector('#grid'), count=document.querySelector('#count'), search=document.querySelector('#search');
+
+function imageSrc(x){
+  if(x.photo && x.photo !== 'photo/') return x.photo;
+  return `photo/${x.image || ''}`;
+}
+
+function setImage(img,x){
+  img.src=imageSrc(x);
+  img.alt=`Фото: ${x.name}`;
+  img.onerror=()=>{img.onerror=null;img.src='photo/vagon.png';};
+}
+
+function render(){
+  const q=search.value.toLowerCase().trim();
+  const arr=data.filter(x=>(x.name+' '+x.short).toLowerCase().includes(q));
+  count.textContent=`Найдено: ${arr.length}`;
+  grid.innerHTML=arr.map(x=>`<article class="card"><div class="photo-wrap"><img class="photo" alt="Фото: ${x.name}" loading="lazy"></div><div class="card-body"><h2>${x.name}</h2><p>${x.short}</p><button class="btn" onclick="openCard(${data.indexOf(x)})">Подробнее</button></div></article>`).join('');
+  arr.forEach((x,i)=>setImage(grid.querySelectorAll('.card')[i].querySelector('.photo'),x));
+}
+
+const modal=document.querySelector('#modal');
+
+function openCard(i, fromUrl){
+  const x=data[i];
+  setImage(document.querySelector('#dialogPhoto'),x);
+  document.querySelector('#title').textContent=x.name;
+  document.querySelector('#subtitle').textContent='Электронная страница узла';
+  document.querySelector('#desc').textContent=x.desc;
+  document.querySelector('#purpose').textContent=x.purpose;
+  document.querySelector('#parts').innerHTML=x.parts.map(p=>`<li>${p}</li>`).join('');
+  
+  // QR-код ведёт на эту же страницу с параметром узла
+  const baseUrl = location.origin + location.pathname;
+  const qrUrl = baseUrl + '?uzel=' + x.slug;
+  document.querySelector('#qrImage').src = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' + encodeURIComponent(qrUrl);
+  
+  modal.classList.add('open');
+  document.body.style.overflow='hidden';
+  
+  // Обновляем URL, чтобы можно было скопировать ссылку (но не при загрузке из URL)
+  if(!fromUrl){
+    history.replaceState(null, '', '?uzel=' + x.slug);
+  }
+}
+
+function closeModal(){
+  modal.classList.remove('open');
+  document.body.style.overflow='';
+  // Убираем параметр из URL
+  history.replaceState(null, '', location.pathname);
+}
+
+document.querySelector('#close').onclick=closeModal;
+modal.onclick=e=>{if(e.target===modal)closeModal()};
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal()});
+search.oninput=render;
+render();
+
+// Проверяем URL на параметр ?uzel=... и автоматически открываем карточку
+(function openFromUrl(){
+  const params = new URLSearchParams(location.search);
+  const slug = params.get('uzel');
+  if(!slug) return;
+  const idx = data.findIndex(x => x.slug === slug);
+  if(idx >= 0){
+    // небольшая задержка, чтобы фото и DOM успели подготовиться
+    setTimeout(()=>openCard(idx, true), 100);
+  }
+})();
+</script></body></html>
